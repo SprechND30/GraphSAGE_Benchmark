@@ -37,7 +37,7 @@ def create_G_idM_classM(adjacency, features, testMask, valMask, labels):
         G.nodes[i]['features'] = list(map(float, list(features[i])))
         G.nodes[i]['test'] = bool(testMask[i])
         G.nodes[i]['val'] = bool(valMask[i])
-        G.nodes[i]['labels'] = list(labels[i])
+        G.nodes[i]['labels'] = list(map(int, list(labels[i])))
         i += 1
        
     # 2. Create id-Map and class-Map
@@ -103,7 +103,7 @@ def main():
     G, IDMap, classMap = create_G_idM_classM(adj, features, testMask, valMask, labels)
     
     # Dump everything into .json files and one .npy
-    dumpJSON(FLAGS.destination_dir, FLAGS.dataset, G, IDMap, classMap, features)
+    #dumpJSON(FLAGS.destination_dir, FLAGS.dataset, G, IDMap, classMap, features)
     
     
 if __name__ == "__main__":

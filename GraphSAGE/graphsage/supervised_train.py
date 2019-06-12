@@ -61,14 +61,14 @@ os.environ["CUDA_VISIBLE_DEVICES"]=str(FLAGS.gpu)
 
 GPU_MEM_FRACTION = 0.8
 
-def calc_f1(y_true, y_pred):
+def calc_scores(y_true, y_pred):
     if not FLAGS.sigmoid:
         y_true = np.argmax(y_true, axis=1)
         y_pred = np.argmax(y_pred, axis=1)
     else:
         y_pred[y_pred > 0.5] = 1
         y_pred[y_pred <= 0.5] = 0
-    return metrics.f1_score(y_true, y_pred, average="micro"), metrics.f1_score(y_true, y_pred, average="macro")
+    return metrics.precision_recall_fscore_support(y_true, y_pred, labels = [0, 1], average="micro")
 
 # Define model evaluation function
 def evaluate(sess, model, minibatch_iter, size=None):
@@ -76,8 +76,8 @@ def evaluate(sess, model, minibatch_iter, size=None):
     feed_dict_val, labels = minibatch_iter.node_val_feed_dict(size)
     node_outs_val = sess.run([model.preds, model.loss], 
                         feed_dict=feed_dict_val)
-    mic, mac = calc_f1(labels, node_outs_val[0])
-    return node_outs_val[1], mic, mac, (time.time() - t_test)
+    precision, recall, fscore, support = calc_scores(labels, node_outs_val[0])
+    return node_outs_val[1], precision, recall, fscore, support, (time.time() - t_test)
 
 def log_dir():
     log_dir = FLAGS.base_log_dir + "/sup-" + FLAGS.train_prefix.split("/")[-2]
@@ -107,8 +107,8 @@ def incremental_evaluate(sess, model, minibatch_iter, size, test=False):
         iter_num += 1
     val_preds = np.vstack(val_preds)
     labels = np.vstack(labels)
-    f1_scores = calc_f1(labels, val_preds)
-    return np.mean(val_losses), f1_scores[0], f1_scores[1], (time.time() - t_test)
+    scores = calc_scores(labels, val_preds)
+    return np.mean(val_losses), scores[0], scores[1], scores[2], scores[3], (time.time() - t_test)
 
 def construct_placeholders(num_classes):
     # Define placeholders
@@ -280,9 +280,9 @@ def train(train_data, test_data=None):
                 # Validation
                 sess.run(val_adj_info.op)
                 if FLAGS.validate_batch_size == -1:
-                    val_cost, val_f1_mic, val_f1_mac, duration = incremental_evaluate(sess, model, minibatch, FLAGS.batch_size)
+                    val_cost, val_precision, val_recall, val_f1, val_support, duration = incremental_evaluate(sess, model, minibatch, FLAGS.batch_size)
                 else:
-                    val_cost, val_f1_mic, val_f1_mac, duration = evaluate(sess, model, minibatch, FLAGS.validate_batch_size)
+                    val_cost, val_precision, val_recall, val_f1, val_support, duration = evaluate(sess, model, minibatch, FLAGS.validate_batch_size)
                 sess.run(train_adj_info.op)
                 epoch_val_costs[-1] += val_cost
 
@@ -293,14 +293,18 @@ def train(train_data, test_data=None):
             avg_time = (avg_time * total_steps + time.time() - t) / (total_steps + 1)
 
             if total_steps % FLAGS.print_every == 0:
-                train_f1_mic, train_f1_mac = calc_f1(labels, outs[-1])
+                train_precision, train_recall, train_f1, train_support = calc_scores(labels, outs[-1])
                 print("Iter:", '%04d' % iter, 
                       "train_loss=", "{:.5f}".format(train_cost),
-                      "train_f1_mic=", "{:.5f}".format(train_f1_mic), 
-                      "train_f1_mac=", "{:.5f}".format(train_f1_mac), 
+                      "train_precision=", "{:.5f}".format(train_precision), 
+                      "train_recall=", "{:.5f}".format(train_recall),
+                      "train_f1=", "{:.5f}".format(train_f1),
+                      "train_support=", "{:.5s}".format(train_support),
                       "val_loss=", "{:.5f}".format(val_cost),
-                      "val_f1_mic=", "{:.5f}".format(val_f1_mic), 
-                      "val_f1_mac=", "{:.5f}".format(val_f1_mac), 
+                      "val_precision=", "{:.5f}".format(val_precision), 
+                      "val_recall=", "{:.5f}".format(val_recall), 
+                      "val_f1=", "{:.5f}".format(val_f1),
+                      "val_support=", "{:.5s}".format(val_support), 
                       "time=", "{:.5f}".format(avg_time))
  
             iter += 1
@@ -314,21 +318,23 @@ def train(train_data, test_data=None):
     
     print("Optimization Finished!")
     sess.run(val_adj_info.op)
-    val_cost, val_f1_mic, val_f1_mac, duration = incremental_evaluate(sess, model, minibatch, FLAGS.batch_size)
+    val_cost, val_precision, val_recall, val_f1, val_support, duration = incremental_evaluate(sess, model, minibatch, FLAGS.batch_size)
     print("Full validation stats:",
                   "loss=", "{:.5f}".format(val_cost),
-                  "f1_micro=", "{:.5f}".format(val_f1_mic),
-                  "f1_macro=", "{:.5f}".format(val_f1_mac),
+                  "precision=", "{:.5f}".format(val_precision),
+                  "recall=", "{:.5f}".format(val_recall),
+                  "f1=", "{:.5f}".format(val_f1),
+                  "support=", "{:.5s}".format(val_support),
                   "time=", "{:.5f}".format(duration))
     with open(log_dir() + "val_stats.txt", "w") as fp:
-        fp.write("loss={:.5f} f1_micro={:.5f} f1_macro={:.5f} time={:.5f}".
-                format(val_cost, val_f1_mic, val_f1_mac, duration))
+        fp.write("loss={:.5f} precision={:.5f} recall={:.5f} f1={:.5f} support={:.5s} time={:.5f}".
+                format(val_cost, val_precision, val_recall, val_f1, val_support, duration))
 
     print("Writing test set stats to file (don't peak!)")
-    val_cost, val_f1_mic, val_f1_mac, duration = incremental_evaluate(sess, model, minibatch, FLAGS.batch_size, test=True)
+    val_cost, val_precision, val_recall, val_f1, val_support, duration = incremental_evaluate(sess, model, minibatch, FLAGS.batch_size, test=True)
     with open(log_dir() + "test_stats.txt", "w") as fp:
-        fp.write("loss={:.5f} f1_micro={:.5f} f1_macro={:.5f}".
-                format(val_cost, val_f1_mic, val_f1_mac))
+        fp.write("loss={:.5f} precision={:.5f} recall={:.5f} f1={:.5f} support={:.5s}".
+                format(val_cost, val_precision, val_recall, val_f1, val_support))
 
 def main(argv=None):
     print("Loading training data..")
