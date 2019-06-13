@@ -103,7 +103,7 @@ def main():
     G, IDMap, classMap = create_G_idM_classM(adj, features, testMask, valMask, labels)
     
     # Dump everything into .json files and one .npy
-    #dumpJSON(FLAGS.destination_dir, FLAGS.dataset, G, IDMap, classMap, features)
+    dumpJSON(FLAGS.destination_dir, FLAGS.dataset, G, IDMap, classMap, features)
     
     
 if __name__ == "__main__":

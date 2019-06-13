@@ -9,7 +9,7 @@ flags.DEFINE_float('pollute_ratio', 0.1, 'ratio of nodes to pollute.')
 flags.DEFINE_float('attribute_pollution_ratio', 0.1, 'ratio of nodes to pollute.')
 
 def pollute_data(labels,attributes, idx_train, idx_val, idx_test):
-    print ("Pollute data process starts \n")
+    print ("Pollute=ing data\n")
     # transform attributes to csr format
     attributes = attributes.tocsr()
     #Get the shape of label
