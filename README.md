@@ -2,7 +2,7 @@
 
 ### Preprocessing
 
-The first step is to turn the specified dataset into the format required by the GraphSAGE algorithm. GraphSAGE takes, as input, a the *Networkx* graph, a classification map, and an index map, all stored as .json files. It also requires a feature matrix, stored as a .npy. 
+The first step is to turn the specified dataset into the format required by the GraphSAGE algorithm. GraphSAGE takes, as input, a *Networkx* graph, a classification map, and an index map, all stored as .json files. It also requires a feature matrix, stored as a .npy. 
 
 In order to convert the existing dataset into this format, *cd* into the "Preprocessing" directory. Here, you will find the scripts, as well as a sub-directory containing the datasets. In order to run the program, use the following command:
 

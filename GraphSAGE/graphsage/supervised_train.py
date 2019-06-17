@@ -68,7 +68,8 @@ def calc_scores(y_true, y_pred):
     else:
         y_pred[y_pred > 0.5] = 1
         y_pred[y_pred <= 0.5] = 0
-    return metrics.precision_recall_fscore_support(y_true, y_pred, labels = [0, 1], average="micro")
+    precision, recall, fscore, support = metrics.precision_recall_fscore_support(y_true, y_pred, average=None)
+    return precision[1], recall[1], fscore[1], support[1]
 
 # Define model evaluation function
 def evaluate(sess, model, minibatch_iter, size=None):
@@ -299,12 +300,12 @@ def train(train_data, test_data=None):
                       "train_precision=", "{:.5f}".format(train_precision), 
                       "train_recall=", "{:.5f}".format(train_recall),
                       "train_f1=", "{:.5f}".format(train_f1),
-                      "train_support=", "{:.5s}".format(train_support),
+                      "train_support=", "{:.5f}".format(train_support),
                       "val_loss=", "{:.5f}".format(val_cost),
                       "val_precision=", "{:.5f}".format(val_precision), 
                       "val_recall=", "{:.5f}".format(val_recall), 
                       "val_f1=", "{:.5f}".format(val_f1),
-                      "val_support=", "{:.5s}".format(val_support), 
+                      "val_support=", "{:.5f}".format(val_support), 
                       "time=", "{:.5f}".format(avg_time))
  
             iter += 1
@@ -324,16 +325,16 @@ def train(train_data, test_data=None):
                   "precision=", "{:.5f}".format(val_precision),
                   "recall=", "{:.5f}".format(val_recall),
                   "f1=", "{:.5f}".format(val_f1),
-                  "support=", "{:.5s}".format(val_support),
+                  "support=", "{:.5f}".format(val_support),
                   "time=", "{:.5f}".format(duration))
     with open(log_dir() + "val_stats.txt", "w") as fp:
-        fp.write("loss={:.5f} precision={:.5f} recall={:.5f} f1={:.5f} support={:.5s} time={:.5f}".
+        fp.write("loss={:.5f} precision={:.5f} recall={:.5f} f1={:.5f} support={:.5f} time={:.5f}".
                 format(val_cost, val_precision, val_recall, val_f1, val_support, duration))
 
     print("Writing test set stats to file (don't peak!)")
     val_cost, val_precision, val_recall, val_f1, val_support, duration = incremental_evaluate(sess, model, minibatch, FLAGS.batch_size, test=True)
     with open(log_dir() + "test_stats.txt", "w") as fp:
-        fp.write("loss={:.5f} precision={:.5f} recall={:.5f} f1={:.5f} support={:.5s}".
+        fp.write("loss={:.5f} precision={:.5f} recall={:.5f} f1={:.5f} support={:.5f}".
                 format(val_cost, val_precision, val_recall, val_f1, val_support))
 
 def main(argv=None):
