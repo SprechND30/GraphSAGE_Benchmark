@@ -5,8 +5,8 @@ import random
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 
-flags.DEFINE_float('pollute_ratio', 0.6, 'ratio of nodes to pollute.')
-flags.DEFINE_float('attribute_pollution_ratio', 0.01, 'ratio of nodes to pollute.')
+flags.DEFINE_float('pollute_ratio', 0.2, 'ratio of nodes to pollute.')
+flags.DEFINE_float('attribute_pollution_ratio', 0.2, 'ratio of nodes to pollute.')
 
 def pollute_data(labels,attributes, idx_train, idx_val, idx_test):
     print ("Polluting data\n")

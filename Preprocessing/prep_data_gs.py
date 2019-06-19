@@ -34,7 +34,7 @@ def create_G_idM_classM(adjacency, features, testMask, valMask, labels):
     # Iterate through each node, adding the features
     i = 0
     for n in list(G):
-        G.nodes[i]['features'] = list(map(float, list(features[i])))
+        G.nodes[i]['feature'] = list(map(float, list(features[i])))
         G.nodes[i]['test'] = bool(testMask[i])
         G.nodes[i]['val'] = bool(valMask[i])
         G.nodes[i]['labels'] = list(map(int, list(labels[i])))

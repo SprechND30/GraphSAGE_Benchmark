@@ -2,6 +2,8 @@
 
 ### Preprocessing
 
+##### Changing Formats
+
 The first step is to turn the specified dataset into the format required by the GraphSAGE algorithm. GraphSAGE takes, as input, a *Networkx* graph, a classification map, and an index map, all stored as .json files. It also requires a feature matrix, stored as a .npy. 
 
 In order to convert the existing dataset into this format, *cd* into the "Preprocessing" directory. Here, you will find the scripts, as well as a sub-directory containing the datasets. In order to run the program, use the following command:
@@ -12,9 +14,19 @@ $ python prep_data_gs.py --dataset MY_DSET --destination_dir MY_DIRECTORY
 
 The two flags above must be set. ```—dataset``` will be either "citeseer" or "cora", and ```—destination_dir``` will be whatever sub-directory in which you'd like to store the output. 
 
-You can, optionally, set the ```—pollution_ratio``` flag. This will be a float between 0 and 1, and determines the percentage of training, validation, and test samples that will be dirtied. The default is 10% (0.1).
+You can, optionally, set the ```—pollute_ratio``` and ```—attribute_pollution_ratio``` flags. These will be floats between 0 and 1, determining the percentage of training, validation, and test samples that will be dirtied and the percentage of attributes within these nodes that will be corrupted. The default is 20% (0.2).
 
 Once the program has been run, your sub-directory should contain the three *json* files and the one *numpy* file. In order to proceed to the next step, this subdirectory must be moved/copied to the "GraphSAGE/graphsage" directory.
+
+##### GraphSAGE-ready Pollution
+
+Some datasets may already be in the format accepted by GraphSAGE. In order to pollute and label them, use the following command:
+
+```bash
+$ python prep_preformatted.py --dataset MY_DSET --destination_dir MY_DIRECTORY
+```
+
+In this case, ```—dataset``` must be set to the path of the dataset, as well as its prefix. For example, if you wish to pollute the *toy-ppi* dataset, contained in the subdirectory "example_data," comprised of the files "toy-ppi-G.json," "toy-ppi-id_map.json," etc, then you would set ```—dataset example_data/toy-ppi```. The flags for attribute and node pollution are identical to the previous program. 
 
 ### GraphSAGE
 
