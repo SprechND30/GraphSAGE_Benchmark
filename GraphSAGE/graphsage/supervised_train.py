@@ -295,7 +295,8 @@ def train(train_data, test_data=None):
 
             if total_steps % FLAGS.print_every == 0:
                 train_precision, train_recall, train_f1, train_support = calc_scores(labels, outs[-1])
-                print("Iter:", '%04d' % iter, 
+                print("Iter:", '%04d' % iter)
+                ''', 
                       "train_loss=", "{:.5f}".format(train_cost),
                       "train_precision=", "{:.5f}".format(train_precision), 
                       "train_recall=", "{:.5f}".format(train_recall),
@@ -306,7 +307,7 @@ def train(train_data, test_data=None):
                       "val_recall=", "{:.5f}".format(val_recall), 
                       "val_f1=", "{:.5f}".format(val_f1),
                       "val_support=", "{:.5f}".format(val_support), 
-                      "time=", "{:.5f}".format(avg_time))
+                      "time=", "{:.5f}".format(avg_time))'''
  
             iter += 1
             total_steps += 1
@@ -341,7 +342,59 @@ def main(argv=None):
     print("Loading training data..")
     train_data = load_data(FLAGS.train_prefix)
     print("Done loading training data..")
+    
     train(train_data)
+    
+    '''
+    # If no model is chosen, loop through each
+    if FLAGS.model == None:
+        FLAGS.model = 'graphsage_mean'
+        i = 0
+        
+        while i < 5:
+            if FLAGS.model == 'graphsage_mean':
+                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~MEAN-BASED~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                print("Loading training data..")
+                train_data = load_data(FLAGS.train_prefix)
+                print("Done loading training data..")
+                train(train_data)
+                FLAGS.model = 'gcn'
+                
+            elif FLAGS.model == 'gcn':
+                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~GCN~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                print("Loading training data..")
+                train_data = load_data(FLAGS.train_prefix)
+                print("Done loading training data..")
+                train(train_data)
+                FLAGS.model = 'graphsage_seq'
+                
+            elif FLAGS.model == 'graphsage_seq':
+                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~LSTM-BASED~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                print("Loading training data..")
+                train_data = load_data(FLAGS.train_prefix)
+                print("Done loading training data..")
+                train(train_data)
+                FLAGS.model = 'graphsage_meanpool'
+                
+            elif FLAGS.model == 'graphsage_meanpool':
+                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~MEAN-POOL~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                print("Loading training data..")
+                train_data = load_data(FLAGS.train_prefix)
+                print("Done loading training data..")
+                train(train_data)
+                FLAGS.model = 'graphsage_maxpool'
+                
+            elif FLAGS.model == 'graphsage_maxpool':
+                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~MAX-POOL~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                print("Loading training data..")
+                train_data = load_data(FLAGS.train_prefix)
+                print("Done loading training data..")
+                train(train_data)
+            
+            i += 1
+    else:
+        train(train_data)
+    '''
 
 if __name__ == '__main__':
     tf.app.run()

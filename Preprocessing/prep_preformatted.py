@@ -1,10 +1,8 @@
 import numpy as np
 import tensorflow as tf
 import json
-import networkx as nx
 from networkx.readwrite import json_graph as jg
 import os
-import random
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -16,6 +14,11 @@ flags.DEFINE_float('pollute_ratio', 0.2, 'ratio of nodes to pollute.')
 flags.DEFINE_float('attribute_pollution_ratio', 0.2, 'ratio of nodes to pollute.')
     
 
+##
+# Load data with specified prefix from its constituent files. Adapted from GraphSAGE's
+# utils.py method 'load_data().' 
+# Returns graph, ID map, class map, and feature vectors.
+##
 def load_data(prefix, normalize=True):
     G_data = json.load(open(prefix + "-G.json"))
     G = jg.node_link_graph(G_data)
@@ -61,43 +64,75 @@ def load_data(prefix, normalize=True):
     return G, id_map, class_map, feats
 
 
+##
+# Pollutes graph, randomly selecting features from randomly selected nodes. The pollute ratio and
+# attribute pollution ratio flags determine the probability that a given node or attribute will
+# be corrupted, respectively. Also labels node accordingly, in graph and class map.
+# Returns graph, class map, and feature vectors.
+##
 def pollute_graph(G, idMap, classMap, feats):
     print ("Polluting data\n")
     
-    #num_nodes = G.number_of_nodes()
-    #num_poll_node = int(num_nodes * FLAGS.pollute_ratio)
-    #num_poll_attr = int(len(G.nodes[0]['feature']) * FLAGS.attribute_pollution_ratio)
+    # Number of nodes, number of nodes in validation and test sets
+    num_nodes = G.number_of_nodes()
+    num_val = 500
+    num_test = 1000
     
+    # Number of polluted nodes in train, validationm, and test sets, respectively
+    poll_num_train = int((num_nodes - (num_val+num_test)) * FLAGS.pollute_ratio)
+    poll_num_val = int(num_val * FLAGS.pollute_ratio)
+    poll_num_test = int(num_test * FLAGS.pollute_ratio)
+    
+    # Index of first validation node and first test node, respectively
+    idx_val = (num_nodes - 1) - (num_val + num_test)
+    idx_test = (num_nodes - 1) - (num_test)
+    
+    # Arrays of the indices of polluted nodes in each of the three sets
+    poll_idx_train = np.random.choice(idx_val-1, poll_num_train, replace=False)
+    poll_idx_val = np.random.choice(range(idx_val, idx_test-1), poll_num_val, replace=False)
+    poll_idx_test = np.random.choice(range(idx_test, num_nodes-1), poll_num_test, replace=False)
+    
+    # The number of attributes and polluted attributes in the feature vector of a node
+    attr_dim = len(G.nodes[0]['feature'])
+    poll_num_attr = int(attr_dim * FLAGS.attribute_pollution_ratio)
+    
+    # Iterate through each node in the graph
     for n in list(G):
-        isPollute = False
-        rand = random.uniform(0, 1)
         
-        # Is this node polluted?
-        if rand < FLAGS.pollute_ratio:
-            isPollute = True
+        # Assign to train, val, or test set
+        if n < idx_val:
+            G.nodes[n]['val'] = False
+            G.nodes[n]['test'] = False
+        elif idx_val <= n < idx_test:
+            G.nodes[n]['val'] = True
+            G.nodes[n]['test'] = False
+        elif idx_test <= n:
+            G.nodes[n]['val'] = False
+            G.nodes[n]['test'] = True
         
-        # Set accordingly
-        if isPollute:
+        # If the node is to be polluted, proceed to its features
+        if (n in poll_idx_train) or (n in poll_idx_val) or (n in poll_idx_test):
             G.nodes[n]['label'] = [0, 1]
             
-            for f in G.nodes[n]['feature']:
-                attrIsPollute = False
-                randAttr = random.uniform(0, 1)
-                i = int(f)
-        
-                # Is this node polluted?
-                if randAttr < FLAGS.attribute_pollution_ratio:
-                    attrIsPollute = True
-                    
-                if attrIsPollute:
-                    if G.nodes[n]['feature'][i] == 1.0:
-                        G.nodes[n]['feature'][i] = 0.0
-                        feats[n][i] = 0.0
-                    else:
-                        G.nodes[n]['feature'][i] = 1.0
-                        feats[n][i] = 1.0
+            poll_attr = np.random.choice(attr_dim, poll_num_attr, replace=False)
+            
+            # Iterate through each of the node's features
+            i = 0
+            while i < poll_num_attr:
+                
+                # If this feature is polluted, switch its value
+                if G.nodes[n]['feature'][poll_attr[i]] == 1.0:
+                    G.nodes[n]['feature'][poll_attr[i]] = 0.0
+                    feats[n][poll_attr[i]] = 0.0
+                else:
+                    G.nodes[n]['feature'][poll_attr[i]] = 1.0
+                    feats[n][poll_attr[i]] = 1.0
+                
+                i += 1
             
             classMap[str(n)] = [0, 1]
+        
+        # Else, label it as clean
         else:
             G.nodes[n]['label'] = [1, 0]
             classMap[str(n)] = [1, 0]
