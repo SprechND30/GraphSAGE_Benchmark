@@ -4,6 +4,7 @@ import tensorflow as tf
 import json
 import networkx as nx
 from networkx.readwrite import json_graph as jg
+import induce_graph as ig
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -11,6 +12,7 @@ FLAGS = flags.FLAGS
 # Dataset and destination directory
 flags.DEFINE_string('dataset', None, 'Dataset to be used (citeseer/cora).')
 flags.DEFINE_string('destination_dir', None, 'Directory to which the data files will be sent.')
+flags.DEFINE_string('induce_method', None, 'By what method to induce the subgraph: BFS, rand, or None')
 
 
 ##
@@ -92,6 +94,9 @@ def dumpJSON(destDirect, datasetName, graph, idMap, classMap, features):
 
 def main():
     
+    valNum = 500
+    testNum = 1000
+    
     # Load data
     adj, features, labels, valMask, testMask = load(FLAGS.dataset)
     
@@ -101,6 +106,17 @@ def main():
     
     # Create Graph, IDMap, and classMap
     G, IDMap, classMap = create_G_idM_classM(adj, features, testMask, valMask, labels)
+    
+    # Index of the highest training node
+    trainIdx = G.number_of_nodes() - (valNum+testNum) - 1
+    
+    # Induce Graph
+    if FLAGS.induce_method == 'rand':
+        G, IDMap, classMap, features = ig.induce_rand(trainIdx, G, IDMap, classMap, features)
+    
+    elif FLAGS.induce_method == 'BFS':
+        G, IDMap, classMap, features = ig.induce_BFS(trainIdx, G, IDMap, classMap, features)
+    
     
     # Dump everything into .json files and one .npy
     dumpJSON(FLAGS.destination_dir, FLAGS.dataset, G, IDMap, classMap, features)
