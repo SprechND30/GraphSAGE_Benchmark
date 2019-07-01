@@ -16,6 +16,8 @@ The two flags above must be set. ```—dataset``` will be either "citeseer" or "
 
 You can, optionally, set the ```—pollute_ratio``` and ```—attribute_pollution_ratio``` flags. These will be floats between 0 and 1, determining the percentage of training, validation, and test samples that will be dirtied and the percentage of attributes within these nodes that will be corrupted. The default is 20% (0.2).
 
+Additionally, the flag ```—induce_method``` tells the program whether—and by what method—to induce a training subgraph by default, GraphSAGE will operate on the full training set from the original graph (that is, any node not in the validate or test sets). This flag allows the user to trim the training graph down. Setting the flag to "rand" will cause the training portion of the graph to be pruned randomly, each node has an equal chance of being removed. If the user sets the flag to "BFS" the program will start with the testing and validation nodes, and move out, using breadth-first seach, to a depth of two neighbors away from the original sets. Then, the training subgraph will be induced, starting by removing nodes randomly from the neighbors twice removed from tessting and validation, and moving into the neighbors only once removed, if required. The flag ```—train_percent``` specifies what percentage of the training dataset to keep, ranging from 0 to 1.
+
 Once the program has been run, your sub-directory should contain the three *json* files and the one *numpy* file. In order to proceed to the next step, this subdirectory must be moved/copied to the "GraphSAGE/graphsage" directory.
 
 ##### GraphSAGE-ready Pollution
