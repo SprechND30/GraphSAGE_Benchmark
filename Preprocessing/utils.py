@@ -82,7 +82,7 @@ def load_data(dataset_str):
     idx_train = range(idx_val[0]-1)
 
     # NOTE: was originally "attributes," not "features"
-    features, labels = pollute_data(labels, features, idx_train, idx_val, idx_test)
+    #features, labels = pollute_data(labels, features, idx_train, idx_val, idx_test)
 
     #vector of size 2708, idx_train as true
     val_mask = sample_mask(idx_val, labels.shape[0])

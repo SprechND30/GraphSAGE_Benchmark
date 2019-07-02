@@ -5,6 +5,7 @@ import json
 import networkx as nx
 from networkx.readwrite import json_graph as jg
 import induce_graph as ig
+import prep_preformatted as pp
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -115,9 +116,11 @@ def main():
         G, IDMap, classMap, features = ig.induce_rand(trainIdx, G, IDMap, classMap, features)
     
     elif FLAGS.induce_method == 'BFS':
-        G, IDMap, classMap, features = ig.induce_BFS(trainIdx, G, IDMap, classMap, features)
+        G, IDMap, classMap, features = ig.induce_BFS(trainIdx, G, IDMap, classMap, features, valNum, testNum)
     
-    
+    # Pollute the graph
+    trainIdx, G, classMap, features = pp.pollute_graph(G, IDMap, classMap, features, valNum, testNum)
+
     # Dump everything into .json files and one .npy
     dumpJSON(FLAGS.destination_dir, FLAGS.dataset, G, IDMap, classMap, features)
     

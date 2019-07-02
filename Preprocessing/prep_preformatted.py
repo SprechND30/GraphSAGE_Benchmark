@@ -3,15 +3,16 @@ import tensorflow as tf
 import json
 from networkx.readwrite import json_graph as jg
 import os
+import induce_graph as ig
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 # Dataset and destination directory
-flags.DEFINE_string('dataset', None, 'Dataset to be used (reddit/reddit).')
-flags.DEFINE_string('destination_dir', None, 'Directory to which the data files will be sent.')
-flags.DEFINE_float('pollute_ratio', 0.2, 'ratio of nodes to pollute.')
-flags.DEFINE_float('attribute_pollution_ratio', 0.2, 'ratio of nodes to pollute.')
+#flags.DEFINE_string('dataset', None, 'Dataset to be used (reddit/reddit).')
+#flags.DEFINE_string('destination_dir', None, 'Directory to which the data files will be sent.')
+#flags.DEFINE_float('pollute_ratio', 0.2, 'ratio of nodes to pollute.')
+#flags.DEFINE_float('attribute_pollution_ratio', 0.2, 'ratio of nodes to pollute.')
     
 
 ##
@@ -45,7 +46,7 @@ def load_data(prefix, normalize=True):
     ## Remove all nodes that do not have val/test annotations
     ## (necessary because of networkx weirdness with the Reddit data)
     broken_count = 0
-    for node in G.nodes():
+    for node in G.nodes():          # THROWS ERROR FOR REDDIT
         if not 'val' in G.node[node] or not 'test' in G.node[node]:
             G.remove_node(node)
             broken_count += 1
@@ -70,13 +71,11 @@ def load_data(prefix, normalize=True):
 # be corrupted, respectively. Also labels node accordingly, in graph and class map.
 # Returns graph, class map, and feature vectors.
 ##
-def pollute_graph(G, idMap, classMap, feats):
+def pollute_graph(G, idMap, classMap, feats, num_val, num_test):
     print ("Polluting data\n")
     
     # Number of nodes, number of nodes in validation and test sets
     num_nodes = G.number_of_nodes()
-    num_val = 500
-    num_test = 1000
     
     # Number of polluted nodes in train, validationm, and test sets, respectively
     poll_num_train = int((num_nodes - (num_val+num_test)) * FLAGS.pollute_ratio)
@@ -136,8 +135,12 @@ def pollute_graph(G, idMap, classMap, feats):
         else:
             G.nodes[n]['label'] = [1, 0]
             classMap[str(n)] = [1, 0]
+            
+    # Delete original labels
+    for n in list(G):
+        del G.nodes[n]['labels']
         
-    return G, classMap, feats
+    return (num_nodes - (num_val + num_test)), G, classMap, feats
 
 ##
 # Dumps the inputted graph, id-map, class-map, and feature matrix into their respective
@@ -178,7 +181,10 @@ def main():
     G, idMap, classMap, feats = load_data(FLAGS.dataset)
     
     # Pollute graphs
-    G, classMap, feats = pollute_graph(G, idMap, classMap, feats)
+    trainIdx, G, classMap, feats = pollute_graph(G, idMap, classMap, feats)
+    
+    # Induce Graph
+    G, idMap, classMap, feats = ig.induce_rand(trainIdx, G, idMap, classMap, feats)
     
     datasetName = FLAGS.dataset.split("/")[-1]
     

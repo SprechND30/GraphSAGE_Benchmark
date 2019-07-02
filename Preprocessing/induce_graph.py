@@ -26,18 +26,12 @@ def trim_graph(train_idx, keep_idx_train, G, id_map, class_map, feats):
             G.remove_node(i)
             id_map.pop(str(i))
             class_map.pop(str(i)) 
-                  
-    # Update the feats vector
-    featsN = np.array([feats[keep_idx_train[0]]])
-    # Add rows from kept training nodes
-    for i in range(1, train_idx):
-        if i in keep_idx_train:
-            featsN = np.append(featsN, [feats[i]], axis=0)
-       
-    # Add rows from val and test
-    for i in range(train_idx, graphSizeOriginal):
-        featsN = np.append(featsN, [feats[i]], axis=0)
-    
+        
+    featsN = np.array([feats[keep_idx_train[0]]])    
+    for n in list(G):
+        row = G.nodes[n]['feature']
+        featsN = np.append(featsN, [row], axis=0)
+    featsN = np.delete(featsN, 0, 0)
                  
     # Reindex the nodes
     id_map = {}
@@ -62,12 +56,10 @@ def trim_graph(train_idx, keep_idx_train, G, id_map, class_map, feats):
 ##
 # Return indicies to be retained from the train set, using BFS from test set
 ##
-def induce_BFS(train_idx, G, id_map, class_map, feats):
+def induce_BFS(train_idx, G, id_map, class_map, feats, val_size, test_size):
     
     # Number of training samples to be kept
     num_nodes = G.number_of_nodes()
-    test_size = 1000
-    val_size = 500
     num_train_keep = int(train_idx * FLAGS.train_percent)
     
     
