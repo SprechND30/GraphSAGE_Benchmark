@@ -6,6 +6,7 @@ import networkx as nx
 from networkx.readwrite import json_graph as jg
 import induce_graph as ig
 import prep_preformatted as pp
+from matplotlib import pyplot as plt
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -108,6 +109,27 @@ def main():
     # Create Graph, IDMap, and classMap
     G, IDMap, classMap = create_G_idM_classM(adj, features, testMask, valMask, labels)
     
+    print("\nORIGINAL GRAPH~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    print(G.number_of_nodes())
+    degrees = [val for (node, val) in G.degree()]
+    #print("Number of isolated nodes:", degrees.count(0))
+    '''options = {
+            'arrows': True,
+            'node_color': 'blue',
+            'node_size': .05,
+            'line_color': 'black',
+            'linewidths': 1,
+            'width': 0.1,
+            'with_labels': False,
+            'node_shape': '.',
+            'node_list': range((G.number_of_nodes() - 1500), G.number_of_nodes())
+            }
+    coef = nx.average_clustering(G)
+    print("Average clustering coefficient:", coef)
+    print("Density: ", nx.density(G))
+    #nx.draw_networkx(G, **options)
+    #plt.savefig('firstGraph.png', dpi=1024)'''
+    
     # Index of the highest training node
     trainIdx = G.number_of_nodes() - (valNum+testNum) - 1
     
@@ -117,6 +139,26 @@ def main():
     
     elif FLAGS.induce_method == 'BFS':
         G, IDMap, classMap, features = ig.induce_BFS(trainIdx, G, IDMap, classMap, features, valNum, testNum)
+    
+    print("\nNEW GRAPH~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    print(G.number_of_nodes())
+    options = {
+            'arrows': True,
+            'node_color': 'blue',
+            'node_size': .05,
+            'line_color': 'black',
+            'linewidths': 1,
+            'width': 0.1,
+            'with_labels': False,
+            'node_shape': '.'
+            }
+    degrees = [val for (node, val) in G.degree()]
+    print("Number of isolated nodes:", degrees.count(0))
+    coef = nx.average_clustering(G)
+    print("Average clustering coefficient:", coef)
+    print("Density: ", nx.density(G))
+    nx.draw_networkx(G, **options)
+    plt.savefig(FLAGS.destination_dir+'/vis.png', dpi=1024)
     
     # Pollute the graph
     trainIdx, G, classMap, features = pp.pollute_graph(G, IDMap, classMap, features, valNum, testNum)
