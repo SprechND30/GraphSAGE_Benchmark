@@ -68,8 +68,9 @@ def calc_scores(y_true, y_pred):
     else:
         y_pred[y_pred > 0.5] = 1
         y_pred[y_pred <= 0.5] = 0
+     
     precision, recall, fscore, support = metrics.precision_recall_fscore_support(y_true, y_pred, average=None)
-    return precision[1], recall[1], fscore[1], support[1]
+    return precision[0], recall[0], fscore[0], support[0]
 
 # Define model evaluation function
 def evaluate(sess, model, minibatch_iter, size=None):
@@ -271,7 +272,9 @@ def train(train_data, test_data=None):
             # Construct feed dictionary
             feed_dict, labels = minibatch.next_minibatch_feed_dict()
             feed_dict.update({placeholders['dropout']: FLAGS.dropout})
-            
+            #print("\nFeed Dictionary and Labels (iteration)")
+            #print(feed_dict)
+            #print(labels)
             t = time.time()
             # Training step
             outs = sess.run([merged, model.opt_op, model.loss, model.preds], feed_dict=feed_dict)
@@ -281,6 +284,7 @@ def train(train_data, test_data=None):
                 # Validation
                 sess.run(val_adj_info.op)
                 if FLAGS.validate_batch_size == -1:
+                    print("\nValidate")
                     val_cost, val_precision, val_recall, val_f1, val_support, duration = incremental_evaluate(sess, model, minibatch, FLAGS.batch_size)
                 else:
                     val_cost, val_precision, val_recall, val_f1, val_support, duration = evaluate(sess, model, minibatch, FLAGS.validate_batch_size)
@@ -294,9 +298,9 @@ def train(train_data, test_data=None):
             avg_time = (avg_time * total_steps + time.time() - t) / (total_steps + 1)
 
             if total_steps % FLAGS.print_every == 0:
+                print("\nTrain")
                 train_precision, train_recall, train_f1, train_support = calc_scores(labels, outs[-1])
-                print("Iter:", '%04d' % iter)
-                ''', 
+                print("Iter:", '%04d' % iter, 
                       "train_loss=", "{:.5f}".format(train_cost),
                       "train_precision=", "{:.5f}".format(train_precision), 
                       "train_recall=", "{:.5f}".format(train_recall),
@@ -307,7 +311,7 @@ def train(train_data, test_data=None):
                       "val_recall=", "{:.5f}".format(val_recall), 
                       "val_f1=", "{:.5f}".format(val_f1),
                       "val_support=", "{:.5f}".format(val_support), 
-                      "time=", "{:.5f}".format(avg_time))'''
+                      "time=", "{:.5f}".format(avg_time))
  
             iter += 1
             total_steps += 1
@@ -321,19 +325,26 @@ def train(train_data, test_data=None):
     print("Optimization Finished!")
     sess.run(val_adj_info.op)
     val_cost, val_precision, val_recall, val_f1, val_support, duration = incremental_evaluate(sess, model, minibatch, FLAGS.batch_size)
-    print("Full validation stats:",
+    '''print("Full validation stats:",
                   "loss=", "{:.5f}".format(val_cost),
                   "precision=", "{:.5f}".format(val_precision),
                   "recall=", "{:.5f}".format(val_recall),
                   "f1=", "{:.5f}".format(val_f1),
                   "support=", "{:.5f}".format(val_support),
-                  "time=", "{:.5f}".format(duration))
+                  "time=", "{:.5f}".format(duration))'''
     with open(log_dir() + "val_stats.txt", "w") as fp:
         fp.write("loss={:.5f} precision={:.5f} recall={:.5f} f1={:.5f} support={:.5f} time={:.5f}".
                 format(val_cost, val_precision, val_recall, val_f1, val_support, duration))
 
     print("Writing test set stats to file (don't peak!)")
     val_cost, val_precision, val_recall, val_f1, val_support, duration = incremental_evaluate(sess, model, minibatch, FLAGS.batch_size, test=True)
+    print("Full test stats:",
+                  "loss=", "{:.5f}".format(val_cost),
+                  "precision=", "{:.5f}".format(val_precision),
+                  "recall=", "{:.5f}".format(val_recall),
+                  "f1=", "{:.5f}".format(val_f1),
+                  "support=", "{:.5f}".format(val_support),
+                  "time=", "{:.5f}".format(duration))
     with open(log_dir() + "test_stats.txt", "w") as fp:
         fp.write("loss={:.5f} precision={:.5f} recall={:.5f} f1={:.5f} support={:.5f}".
                 format(val_cost, val_precision, val_recall, val_f1, val_support))
@@ -344,57 +355,7 @@ def main(argv=None):
     print("Done loading training data..")
     
     train(train_data)
-    
-    '''
-    # If no model is chosen, loop through each
-    if FLAGS.model == None:
-        FLAGS.model = 'graphsage_mean'
-        i = 0
-        
-        while i < 5:
-            if FLAGS.model == 'graphsage_mean':
-                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~MEAN-BASED~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-                print("Loading training data..")
-                train_data = load_data(FLAGS.train_prefix)
-                print("Done loading training data..")
-                train(train_data)
-                FLAGS.model = 'gcn'
-                
-            elif FLAGS.model == 'gcn':
-                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~GCN~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-                print("Loading training data..")
-                train_data = load_data(FLAGS.train_prefix)
-                print("Done loading training data..")
-                train(train_data)
-                FLAGS.model = 'graphsage_seq'
-                
-            elif FLAGS.model == 'graphsage_seq':
-                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~LSTM-BASED~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-                print("Loading training data..")
-                train_data = load_data(FLAGS.train_prefix)
-                print("Done loading training data..")
-                train(train_data)
-                FLAGS.model = 'graphsage_meanpool'
-                
-            elif FLAGS.model == 'graphsage_meanpool':
-                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~MEAN-POOL~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-                print("Loading training data..")
-                train_data = load_data(FLAGS.train_prefix)
-                print("Done loading training data..")
-                train(train_data)
-                FLAGS.model = 'graphsage_maxpool'
-                
-            elif FLAGS.model == 'graphsage_maxpool':
-                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~MAX-POOL~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-                print("Loading training data..")
-                train_data = load_data(FLAGS.train_prefix)
-                print("Done loading training data..")
-                train(train_data)
-            
-            i += 1
-    else:
-        train(train_data)
-    '''
+
 
 if __name__ == '__main__':
     tf.app.run()

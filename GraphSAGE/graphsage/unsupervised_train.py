@@ -6,10 +6,10 @@ import time
 import tensorflow as tf
 import numpy as np
 
-from graphsage.models import SampleAndAggregate, SAGEInfo, Node2VecModel
-from graphsage.minibatch import EdgeMinibatchIterator
-from graphsage.neigh_samplers import UniformNeighborSampler
-from graphsage.utils import load_data
+from models import SampleAndAggregate, SAGEInfo, Node2VecModel
+from minibatch import EdgeMinibatchIterator
+from neigh_samplers import UniformNeighborSampler
+from utils import load_data
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 
@@ -335,7 +335,7 @@ def train(train_data, test_data=None):
             sess.run(model.context_embeds)
 
             # run random walks
-            from graphsage.utils import run_random_walks
+            from utils import run_random_walks
             nodes = [n for n in G.nodes_iter() if G.node[n]["val"] or G.node[n]["test"]]
             start_time = time.time()
             pairs = run_random_walks(G, nodes, num_walks=50)

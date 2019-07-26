@@ -49,3 +49,27 @@ $ python supervised_train.py --train_prefix EXAMPLE_DIRECTORY/MY_DATA --model MY
 ```
 
 The ```—train_prefix``` flag must be set. For example, if the "cora" dataset is stored in the directory "cora_data," then it will be "cora_data/cora." The model is set to "graphsage_mean," by default, but can be changed to any of the six aggregators. The ```—base_log_dir``` specifies the location of the output; in the case of the supervised model, it will store the F1 scores (working on precision and recall), as well as the elapsed time. Last, when run on not-super-computers, ```—batch_size``` can be changed (the default is 512). More information can be found in the README for the project (in the GraphSAGE folder).
+
+### Node2Vec
+
+If you would like to compare the results from GraphSAGE to a more primitive approach, you must first generate node embeddings for your chosen dataset using GraphSAGE's unsupervised training program, then run the simple classifier program in the same directory.
+
+First, if walks have not already been generated for the dataset, they must be created. First, build and run a docker image, then, navigate into ```GraphSAGE/graphsage```. Once there, run ```utils.py``` to generate a ```DATASET-walks.txt``` file. It can be run with the following command.
+
+```bash
+$ python utils.py DATASET-PATH/DATASET-G.json DATASET-PATH/DATASET-walks.txt
+```
+
+Once this step has been completed, you will need to generate node embeddings. This can be accomplished using the ```unsupervised_train.py``` program. The command is as follows:
+
+```bash
+$ python unsupervised_train.py --base_log_dir RESULT_DIR --batch_size BATCH_SIZE --model n2v --train_prefix DATASET_PATH/DATASET_NAME
+```
+
+This will generate ```val.txt``` and ```val.npy``` files in a subdirectory of RESULT_DIR. The final step is to run the classification algorithm on these embeddings, as well as the class_map.json file of the dataset at hand. Use the following command:
+
+```bash
+$ python node2vec_train.py --labels DATASET_PATH/DATASET-class_map.json --train_prefix RESULT_DIR/unsup-DATASET_SUBDIR/n2v_small_0.000010/ --model MODEL
+```
+
+The ```—model``` flag can be set to "log_reg" for logistic regression, "dec_tree" for decision tree, or "knn" for k-nearest-neighbor. The decision tree generates the highest F1 Scores.
